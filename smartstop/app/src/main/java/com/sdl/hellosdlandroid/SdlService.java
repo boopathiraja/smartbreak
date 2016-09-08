@@ -57,6 +57,7 @@ import com.smartdevicelink.proxy.rpc.PutFileResponse;
 import com.smartdevicelink.proxy.rpc.ReadDIDResponse;
 import com.smartdevicelink.proxy.rpc.ResetGlobalPropertiesResponse;
 import com.smartdevicelink.proxy.rpc.ScrollableMessageResponse;
+import com.smartdevicelink.proxy.rpc.SendLocation;
 import com.smartdevicelink.proxy.rpc.SendLocationResponse;
 import com.smartdevicelink.proxy.rpc.SetAppIconResponse;
 import com.smartdevicelink.proxy.rpc.SetDisplayLayoutResponse;
@@ -338,6 +339,13 @@ public class SdlService extends Service implements IProxyListenerALM{
             if (notification.getFirstRun()) {
                 // send welcome message if applicable
                 performWelcomeMessage();
+
+                Log.i(TAG, "getvehicledata calling ");
+                try {
+                    proxy.getvehicledata(true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,autoIncCorrId++);
+                } catch (SdlException e) {
+                    e.printStackTrace();
+                }
             }
             // Other HMI (Show, PerformInteraction, etc.) would go here
         }
@@ -591,6 +599,36 @@ public class SdlService extends Service implements IProxyListenerALM{
     @Override
     public void onGetVehicleDataResponse(GetVehicleDataResponse response) {
         Log.i(TAG, "GetVehicleData response from SDL: " + response.getResultCode().name() + " Info: " + response.getInfo());
+        Log.i(TAG, "Longitude "+response.getGps().getLongitudeDegrees().toString());
+        Log.i(TAG, "Latitude"+response.getGps().getLatitudeDegrees().toString());
+        Log.i(TAG,  "Fuel Level"+String.valueOf(response.getFuelLevel().intValue()));
+        Log.i(TAG, "FuelLevel State "+response.getFuelLevelState().toString());
+        Log.i(TAG, "actual gps "+String.valueOf(response.getGps().getActual().booleanValue()));
+        Log.i(TAG, String.valueOf(response.getGps().getHdop().intValue()));
+        Log.i(TAG, String.valueOf(response.getGps().getUtcDay()));
+        Log.i(TAG, String.valueOf(response.getGps().getUtcHours()));
+        Log.i(TAG, String.valueOf(response.getGps().getUtcMonth()));
+        Log.i(TAG, String.valueOf(response.getGps().getUtcMinutes()));
+        Log.i(TAG, String.valueOf(response.getGps().getUtcSeconds()));
+        Log.i(TAG, String.valueOf(response.getGps().getUtcYear()));
+
+
+        SendLocation sendLocation = new SendLocation();
+        sendLocation.setLatitudeDegrees(response.getGps().getLatitudeDegrees());
+        sendLocation.setLongitudeDegrees(response.getGps().getLongitudeDegrees());
+        sendLocation.setLocationDescription("coffee shop");
+        sendLocation.setLocationName("starbucks");
+        List list = new ArrayList();
+        list.add("Infinite loop, CA");
+        sendLocation.setAddressLines(list);
+        sendLocation.setPhoneNumber("9988223344");
+        sendLocation.setCorrelationID(autoIncCorrId++);
+
+        try {
+            proxy.sendRPCRequest(sendLocation);
+        }catch(Exception e){
+            Log.i(TAG,"Exception"+e.toString());
+        }
 
     }
 
