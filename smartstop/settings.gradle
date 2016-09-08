@@ -1,0 +1,2 @@
+include ':app'
+include ':sdl_android_lib'
