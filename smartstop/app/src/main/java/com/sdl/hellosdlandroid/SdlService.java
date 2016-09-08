@@ -92,19 +92,34 @@ import com.smartdevicelink.proxy.rpc.enums.SdlDisconnectedReason;
 import com.smartdevicelink.proxy.rpc.enums.SoftButtonType;
 import com.smartdevicelink.proxy.rpc.enums.TextAlignment;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
+import java.util.Random;
 import java.util.Vector;
+
+import se.walkercrou.places.GooglePlaces;
+import se.walkercrou.places.Param;
+import se.walkercrou.places.Place;
 
 public class SdlService extends Service implements IProxyListenerALM{
 
-    private static final String TAG 					= "Smart Break";
+    private static final String TAG 					= "Smart Breaks";
 
-    private static final String APP_NAME 				= "Smart Break";
+    private static final String APP_NAME 				= "Smart Breaks";
     private static final String APP_ID 					= "896613555";
 
     private static final String ICON_FILENAME 			= "ic_launcher1.png";
@@ -112,8 +127,8 @@ public class SdlService extends Service implements IProxyListenerALM{
 
     List<String> remoteFiles;
 
-    private static final String WELCOME_SHOW 			= "Welcome to Smart Break";
-    private static final String WELCOME_SPEAK 			= "Welcome to Hello Smart Break";
+    private static final String WELCOME_SHOW 			= "Welcome to Smart Breaks";
+    private static final String WELCOME_SPEAK 			= "Welcome to Hello Smart Breaks";
 
     private static final String TEST_COMMAND_NAME 		= "Show Route";
     private static final int TEST_COMMAND_ID 			= 1;
@@ -140,7 +155,17 @@ public class SdlService extends Service implements IProxyListenerALM{
 
     RPCRequest rpcMessage;
 
+    private static final String key = "AIzaSyCDlnWNTIgz2QPW_lTAcOnXepWCkMt12pc";
 
+    private static final ArrayList<Location> arr = new ArrayList<Location>();
+    private Double mohave_county_lat = 35.940250;
+    private Double mohave_county_lon = -114.653351;
+
+    private Double yavapai_county_lat = 34.431871;
+    private Double yavapai_county_lon = -113.236115;
+
+    private Double maricopa_country_lat = 33.813423;
+    private Double maricopa_county_lon = -112.522004;
 
     @Override
     public IBinder onBind(Intent intent) {
@@ -149,6 +174,36 @@ public class SdlService extends Service implements IProxyListenerALM{
 
     @Override
     public void onCreate() {
+
+        /**
+         *
+         * load values
+         */
+
+        Location loc = new Location(33.236430, -111.972687);
+        Location loc1 = new Location(maricopa_country_lat, maricopa_county_lon);
+        Location loc2 = new Location(yavapai_county_lat, yavapai_county_lon);
+        Location loc3 = new Location(mohave_county_lat, mohave_county_lon);
+        Location loc4 = new Location(33.941120, -112.686799);
+        Location loc5 = new Location(34.141401, -112.994416);
+        Location loc6 = new Location(34.883716, -113.598664);
+        Location loc7 = new Location(35.135671, -113.642609);
+        Location loc8 = new Location(35.162621, -113.851350);
+        Location loc9 = new Location(36.011377, -114.763215);
+        Location loc10 = new Location(36.020263, -114.774201);
+
+        arr.add(loc);
+        arr.add(loc1);
+        arr.add(loc2);
+        arr.add(loc3);
+        arr.add(loc4);
+        arr.add(loc5);
+        arr.add(loc6);
+        arr.add(loc7);
+        arr.add(loc8);
+        arr.add(loc9);
+        arr.add(loc10);
+
         Log.d(TAG, "onCreate");
         super.onCreate();
         instance = this;
@@ -721,12 +776,79 @@ public class SdlService extends Service implements IProxyListenerALM{
         Log.i(TAG, "OnButtonEvent notification from SDL: " + notification);
     }
 
+    public void sendNavigation(Double lat, Double lang) {
+        Log.i(TAG, "sendNavigation calling: ");
+
+
+        List<BreaksLoc> locList = getLocation();
+
+        Log.i(TAG, "getLatitude: " + lat);
+        Log.i(TAG, "getLongitude: " + lang);
+
+        SendLocation sendLocation = new SendLocation();
+        sendLocation.setLatitudeDegrees(lat);
+        sendLocation.setLongitudeDegrees(lang);
+        sendLocation.setLocationDescription("coffee shop");
+        sendLocation.setLocationName("starbucks tatum");
+        sendLocation.setCorrelationID(autoIncCorrId++);
+
+        try {
+            proxy.sendRPCRequest(sendLocation);
+        } catch (Exception e) {
+            Log.i(TAG, "Exception" + e.toString());
+        }
+    }
+
+
+
     @Override
     public void onOnButtonPress(OnButtonPress notification) {
         Log.i(TAG, "OnButtonPress notification from SDL: " + notification);
         Log.i(TAG, "OnButtonPress notification from SDL1: " + notification.getCustomButtonName().toString());
+
+        List<BreaksLoc> locList =  getLocation();
+
+
+        sendNavigation(Double.valueOf(locList.get(0).getLatitude()),Double.valueOf(locList.get(0).getLongitude()));
+
+
+
+
         if(notification.getCustomButtonName() != null) {
             if("101".equalsIgnoreCase(notification.getCustomButtonName().toString())){
+                SetDisplayLayout layout = new SetDisplayLayout();
+                layout.setDisplayLayout("TILES_WITH_GRAPHIC");
+                layout.setCorrelationID(autoIncCorrId++);
+
+                try{
+                    //RPCRequestFactory.build
+                    proxy.sendRPCRequest(layout);
+                } catch (Exception e) {
+
+                }
+            }else if("102".equalsIgnoreCase(notification.getCustomButtonName().toString())){
+                SetDisplayLayout layout = new SetDisplayLayout();
+                layout.setDisplayLayout("TILES_WITH_GRAPHIC");
+                layout.setCorrelationID(autoIncCorrId++);
+
+                try{
+                    //RPCRequestFactory.build
+                    proxy.sendRPCRequest(layout);
+                } catch (Exception e) {
+
+                }
+            }else if("103".equalsIgnoreCase(notification.getCustomButtonName().toString())){
+                SetDisplayLayout layout = new SetDisplayLayout();
+                layout.setDisplayLayout("TILES_WITH_GRAPHIC");
+                layout.setCorrelationID(autoIncCorrId++);
+
+                try{
+                    //RPCRequestFactory.build
+                    proxy.sendRPCRequest(layout);
+                } catch (Exception e) {
+
+                }
+            }else{
                 SetDisplayLayout layout = new SetDisplayLayout();
                 layout.setDisplayLayout("TILES_WITH_GRAPHIC");
                 layout.setCorrelationID(autoIncCorrId++);
@@ -767,11 +889,11 @@ public class SdlService extends Service implements IProxyListenerALM{
     @Override
     public void onGetVehicleDataResponse(GetVehicleDataResponse response) {
         Log.i(TAG, "GetVehicleData response from SDL: " + response.getResultCode().name() + " Info: " + response.getInfo());
-        Log.i(TAG, "Longitude "+response.getGps().getLongitudeDegrees().toString());
-        Log.i(TAG, "Latitude"+response.getGps().getLatitudeDegrees().toString());
-        Log.i(TAG,  "Fuel Level"+String.valueOf(response.getFuelLevel().intValue()));
-        Log.i(TAG, "FuelLevel State "+response.getFuelLevelState().toString());
-        Log.i(TAG, "actual gps "+String.valueOf(response.getGps().getActual().booleanValue()));
+        /*Log.i(TAG, "Longitude " + response.getGps().getLongitudeDegrees().toString());
+        Log.i(TAG, "Latitude" + response.getGps().getLatitudeDegrees().toString());
+        Log.i(TAG, "Fuel Level" + String.valueOf(response.getFuelLevel().intValue()));
+        Log.i(TAG, "FuelLevel State " + response.getFuelLevelState().toString());
+        Log.i(TAG, "actual gps " + String.valueOf(response.getGps().getActual().booleanValue()));
         Log.i(TAG, String.valueOf(response.getGps().getHdop().intValue()));
         Log.i(TAG, String.valueOf(response.getGps().getUtcDay()));
         Log.i(TAG, String.valueOf(response.getGps().getUtcHours()));
@@ -785,18 +907,14 @@ public class SdlService extends Service implements IProxyListenerALM{
         sendLocation.setLatitudeDegrees(response.getGps().getLatitudeDegrees());
         sendLocation.setLongitudeDegrees(response.getGps().getLongitudeDegrees());
         sendLocation.setLocationDescription("coffee shop");
-        sendLocation.setLocationName("starbucks");
-        List list = new ArrayList();
-        list.add("Infinite loop, CA");
-        sendLocation.setAddressLines(list);
-        sendLocation.setPhoneNumber("9988223344");
+        sendLocation.setLocationName("starbucks tatum");
         sendLocation.setCorrelationID(autoIncCorrId++);
 
         try {
             proxy.sendRPCRequest(sendLocation);
-        }catch(Exception e){
-            Log.i(TAG,"Exception"+e.toString());
-        }
+        } catch (Exception e) {
+            Log.i(TAG, "Exception" + e.toString());
+        }*/
 
     }
 
@@ -1069,4 +1187,227 @@ public class SdlService extends Service implements IProxyListenerALM{
         }
     };
 
+
+
+
+    public List<BreaksLoc> getLocation() {
+
+        Random r = new Random();
+        int Low = 0;
+        int High = 10;
+        int i = r.nextInt(High - Low) + Low;
+
+        List<BreaksLoc> data = null;
+        try {
+            Location l = arr.get(i);
+            if (i % 2 == 0) {
+                data = getCoffeeShops(l.loc_lat, l.loc_lon);
+            } else {
+                data = getRestaurants(l.loc_lat, l.loc_lon);
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return  data;
+    }
+
+    public List<BreaksLoc> getCoffeeShops(double lat, double lon) {
+
+        GooglePlaces client = new GooglePlaces(key);
+        List<BreaksLoc> loc = new ArrayList<>();
+
+       /*
+       Specific to particular lat long
+        */
+        List<Place> sbplaces = client.getNearbyPlacesRankedByDistance(lat, lon, 3, Param.name("keyword").value("cafe"));
+        Log.i(TAG, " Specific to particular lat long");
+        for (Place p : sbplaces) {
+            BreaksLoc b = new BreaksLoc();
+            Log.i(TAG, p.getName());
+            Log.i(TAG, String.valueOf(p.getLatitude()));
+            Log.i(TAG, String.valueOf(p.getLongitude()));
+            Log.i(TAG, String.valueOf(p.getRating()));
+
+            String status = getCrimeData(String.valueOf(p.getLatitude()), String.valueOf(p.getLongitude()));
+            b.setName(p.getName());
+            b.setLatitude(String.valueOf(p.getLatitude()));
+            b.setLongitude(String.valueOf(p.getLongitude()));
+            b.setRating(String.valueOf(p.getRating()));
+            b.setCrimeStatus(status);
+            loc.add(b);
+            Log.i(TAG, "Status \t" + status);
+
+        }
+
+        return loc;
+    }
+
+
+
+    private String getCrimeData(String lat, String lon) {
+        String crimeStatus = "Green";
+
+        try {
+            URL url = new URL("http://api.spotcrime.com/crimes.json?lat=" + lat + "&lon=" + lon + "&radius=0.03&key=.&_=1473329650463");
+            HttpURLConnection connection =
+                    (HttpURLConnection) url.openConnection();
+
+            //connection.addRequestProperty("x-api-key",
+            //        context.getString(R.string.open_weather_maps_app_id));
+
+            BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(connection.getInputStream()));
+
+            StringBuffer json = new StringBuffer(1024);
+            String tmp = "";
+            while ((tmp = reader.readLine()) != null)
+                json.append(tmp).append("\n");
+            reader.close();
+
+            JSONObject data = new JSONObject(json.toString());
+            JSONArray jsonMainArr = data.getJSONArray("crimes");
+            int sevenDayCount = 0;
+            int thirtyDayCount = 0;
+            for (int n = 0; n < jsonMainArr.length(); n++) {
+                JSONObject object = jsonMainArr.getJSONObject(n);
+                String dateStr = object.getString("date");
+                SimpleDateFormat sdf = new SimpleDateFormat("MM/dd/yy");
+                Date crimeDate = sdf.parse(dateStr);
+
+                Log.i("abc", crimeDate.toString());
+
+                Date now = new Date();
+                Calendar cal = Calendar.getInstance();
+                cal.setTime(now);
+                cal.add(Calendar.DATE, -30);
+                Date dateBefore30Days = cal.getTime();
+
+                Calendar cal1 = Calendar.getInstance();
+                cal1.setTime(now);
+                cal1.add(Calendar.DATE, -7);
+                Date dateBefore7Days = cal1.getTime();
+
+                if (crimeDate.compareTo(dateBefore30Days) > 0) {
+                    thirtyDayCount++;
+                }
+
+                if (crimeDate.compareTo(dateBefore7Days) > 0) {
+                    sevenDayCount++;
+                }
+
+            }
+
+            if (sevenDayCount > 0) {
+                crimeStatus = "Red";
+            } else if (thirtyDayCount > 0) {
+                crimeStatus = "Yellow";
+            }
+
+            // This value will be 404 if the request was not
+            // successful
+            // if(data.getInt("cod") != 200){
+            ///    return null;
+            // }
+
+            //return data;
+        } catch (Exception e) {
+            return null;
+        }
+
+        Log.i(TAG, crimeStatus);
+        return crimeStatus;
+    }
+
+    public List<BreaksLoc> getRestaurants(double lat, double lon) {
+
+        GooglePlaces client = new GooglePlaces(key);
+        List<BreaksLoc> loc = new ArrayList<>();
+
+        List<Place> restaurants = client.getNearbyPlacesRankedByDistance(lat, lon, 3, Param.name("keyword").value("restaurant"));
+
+        Log.i(TAG, "Restaurant particular to a lat long\n");
+        for (Place p : restaurants) {
+            BreaksLoc b = new BreaksLoc();
+            Log.i(TAG, p.getName());
+            Log.i(TAG, String.valueOf(p.getLatitude()));
+            Log.i(TAG, String.valueOf(p.getLongitude()));
+            Log.i(TAG, String.valueOf(p.getRating()));
+            String status = getCrimeData(String.valueOf(p.getLatitude()), String.valueOf(p.getLongitude()));
+
+            b.setName(p.getName());
+            b.setLatitude(String.valueOf(p.getLatitude()));
+            b.setLongitude(String.valueOf(p.getLongitude()));
+            b.setRating(String.valueOf(p.getRating()));
+            b.setCrimeStatus(status);
+            loc.add(b);
+
+        }
+        return loc;
+    }
+
+
+
+    static class BreaksLoc {
+        private String latitude;
+        private String longitude;
+        private String name;
+        private String rating;
+        private String crimeStatus;
+
+        public String getLatitude() {
+            return latitude;
+        }
+
+        public void setLatitude(String latitude) {
+            this.latitude = latitude;
+        }
+
+        public String getLongitude() {
+            return longitude;
+        }
+
+        public void setLongitude(String longitude) {
+            this.longitude = longitude;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
+
+        public String getRating() {
+            return rating;
+        }
+
+        public void setRating(String rating) {
+            this.rating = rating;
+        }
+
+        public String getCrimeStatus() {
+            return crimeStatus;
+        }
+
+        public void setCrimeStatus(String crimeStatus) {
+            this.crimeStatus = crimeStatus;
+        }
+    }
+
+
+    static class Location {
+
+
+
+        private Double loc_lat;
+        private Double loc_lon;
+
+        public Location(Double loc_lat, Double loc_lon) {
+            this.loc_lat = loc_lat;
+            this.loc_lon = loc_lon;
+        }
+    }
 }
