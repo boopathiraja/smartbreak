@@ -88,9 +88,9 @@ import java.util.List;
 
 public class SdlService extends Service implements IProxyListenerALM{
 
-    private static final String TAG 					= "Smart Breake";
+    private static final String TAG 					= "Smart Break";
 
-    private static final String APP_NAME 				= "Smart Breake";
+    private static final String APP_NAME 				= "Smart Break";
     private static final String APP_ID 					= "22056";
 
     private static final String ICON_FILENAME 			= "hello_sdl_icon.png";
@@ -98,8 +98,8 @@ public class SdlService extends Service implements IProxyListenerALM{
 
     List<String> remoteFiles;
 
-    private static final String WELCOME_SHOW 			= "Welcome to Smart Breake";
-    private static final String WELCOME_SPEAK 			= "Welcome to Hello Smart Breake";
+    private static final String WELCOME_SHOW 			= "Welcome to Smart Break";
+    private static final String WELCOME_SPEAK 			= "Welcome to Hello Smart Break";
 
     private static final String TEST_COMMAND_NAME 		= "Show Route";
     private static final int TEST_COMMAND_ID 			= 1;
