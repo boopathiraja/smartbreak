@@ -10,6 +10,7 @@ import android.util.Log;
 import com.smartdevicelink.exception.SdlException;
 import com.smartdevicelink.exception.SdlExceptionCause;
 import com.smartdevicelink.proxy.RPCRequest;
+import com.smartdevicelink.proxy.RPCRequestFactory;
 import com.smartdevicelink.proxy.SdlProxyALM;
 import com.smartdevicelink.proxy.callbacks.OnServiceEnded;
 import com.smartdevicelink.proxy.callbacks.OnServiceNACKed;
@@ -17,9 +18,12 @@ import com.smartdevicelink.proxy.interfaces.IProxyListenerALM;
 import com.smartdevicelink.proxy.rpc.AddCommand;
 import com.smartdevicelink.proxy.rpc.AddCommandResponse;
 import com.smartdevicelink.proxy.rpc.AddSubMenuResponse;
+import com.smartdevicelink.proxy.rpc.Alert;
 import com.smartdevicelink.proxy.rpc.AlertManeuverResponse;
 import com.smartdevicelink.proxy.rpc.AlertResponse;
 import com.smartdevicelink.proxy.rpc.ChangeRegistrationResponse;
+import com.smartdevicelink.proxy.rpc.Choice;
+import com.smartdevicelink.proxy.rpc.CreateInteractionChoiceSet;
 import com.smartdevicelink.proxy.rpc.CreateInteractionChoiceSetResponse;
 import com.smartdevicelink.proxy.rpc.DeleteCommandResponse;
 import com.smartdevicelink.proxy.rpc.DeleteFileResponse;
@@ -31,6 +35,7 @@ import com.smartdevicelink.proxy.rpc.EndAudioPassThruResponse;
 import com.smartdevicelink.proxy.rpc.GenericResponse;
 import com.smartdevicelink.proxy.rpc.GetDTCsResponse;
 import com.smartdevicelink.proxy.rpc.GetVehicleDataResponse;
+import com.smartdevicelink.proxy.rpc.Image;
 import com.smartdevicelink.proxy.rpc.ListFiles;
 import com.smartdevicelink.proxy.rpc.ListFilesResponse;
 import com.smartdevicelink.proxy.rpc.MenuParams;
@@ -60,12 +65,15 @@ import com.smartdevicelink.proxy.rpc.ScrollableMessageResponse;
 import com.smartdevicelink.proxy.rpc.SendLocation;
 import com.smartdevicelink.proxy.rpc.SendLocationResponse;
 import com.smartdevicelink.proxy.rpc.SetAppIconResponse;
+import com.smartdevicelink.proxy.rpc.SetDisplayLayout;
 import com.smartdevicelink.proxy.rpc.SetDisplayLayoutResponse;
 import com.smartdevicelink.proxy.rpc.SetGlobalPropertiesResponse;
 import com.smartdevicelink.proxy.rpc.SetMediaClockTimerResponse;
+import com.smartdevicelink.proxy.rpc.Show;
 import com.smartdevicelink.proxy.rpc.ShowConstantTbtResponse;
 import com.smartdevicelink.proxy.rpc.ShowResponse;
 import com.smartdevicelink.proxy.rpc.SliderResponse;
+import com.smartdevicelink.proxy.rpc.SoftButton;
 import com.smartdevicelink.proxy.rpc.SpeakResponse;
 import com.smartdevicelink.proxy.rpc.StreamRPCResponse;
 import com.smartdevicelink.proxy.rpc.SubscribeButtonResponse;
@@ -76,8 +84,10 @@ import com.smartdevicelink.proxy.rpc.UnsubscribeVehicleDataResponse;
 import com.smartdevicelink.proxy.rpc.UpdateTurnListResponse;
 import com.smartdevicelink.proxy.rpc.enums.FileType;
 import com.smartdevicelink.proxy.rpc.enums.HMILevel;
+import com.smartdevicelink.proxy.rpc.enums.ImageType;
 import com.smartdevicelink.proxy.rpc.enums.LockScreenStatus;
 import com.smartdevicelink.proxy.rpc.enums.SdlDisconnectedReason;
+import com.smartdevicelink.proxy.rpc.enums.SoftButtonType;
 import com.smartdevicelink.proxy.rpc.enums.TextAlignment;
 
 import java.io.ByteArrayOutputStream;
@@ -86,6 +96,7 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Vector;
 
 public class SdlService extends Service implements IProxyListenerALM{
 
@@ -94,7 +105,7 @@ public class SdlService extends Service implements IProxyListenerALM{
     private static final String APP_NAME 				= "Smart Break";
     private static final String APP_ID 					= "22056";
 
-    private static final String ICON_FILENAME 			= "hello_sdl_icon.png";
+    private static final String ICON_FILENAME 			= "ic_launcher.png";
     private int iconCorrelationId;
 
     List<String> remoteFiles;
@@ -104,6 +115,9 @@ public class SdlService extends Service implements IProxyListenerALM{
 
     private static final String TEST_COMMAND_NAME 		= "Show Route";
     private static final int TEST_COMMAND_ID 			= 1;
+
+    private static final String TEST_COMMAND_NAME_2 		= "Test Command 2";
+    private static final int TEST_COMMAND_ID_2			= 2;
 
     // Conenction management
     private static final int CONNECTION_TIMEOUT = 180 * 1000;
@@ -119,6 +133,10 @@ public class SdlService extends Service implements IProxyListenerALM{
 
     private boolean firstNonHmiNone = true;
     private boolean isVehicleDataSubscribed = false;
+
+    Alert req;
+
+    RPCRequest rpcMessage;
 
 
 
@@ -224,6 +242,17 @@ public class SdlService extends Service implements IProxyListenerALM{
         }
     }
 
+
+    public void showTest1(){
+        // try {
+        sendAlert();
+        // proxy.show(TEST_COMMAND_NAME, "Command has been selected", TextAlignment.CENTERED, autoIncCorrId++);
+        // proxy.speak(TEST_COMMAND_NAME, autoIncCorrId++);
+        //  } catch (SdlException e) {
+        //    e.printStackTrace();
+        // }
+    }
+
     /**
      *  Add commands for the app on SDL.
      */
@@ -235,6 +264,13 @@ public class SdlService extends Service implements IProxyListenerALM{
         command.setCmdID(TEST_COMMAND_ID);
         command.setMenuParams(params);
         command.setVrCommands(Arrays.asList(new String[]{TEST_COMMAND_NAME}));
+        sendRpcRequest(command);
+
+        command = new AddCommand();
+        params.setMenuName(TEST_COMMAND_NAME_2);
+        command.setCmdID(TEST_COMMAND_ID_2);
+        command.setMenuParams(params);
+        command.setVrCommands(Arrays.asList(new String[]{TEST_COMMAND_NAME_2}));
         sendRpcRequest(command);
     }
 
@@ -250,6 +286,59 @@ public class SdlService extends Service implements IProxyListenerALM{
             e.printStackTrace();
         }
     }
+
+    /**
+     * Sends an RPC Request to the connected head unit. Automatically adds a correlation id.
+     */
+    private void sendAlert(){
+        try {
+            // PerformInteraction();
+            SoftButton softButton = new SoftButton();
+            softButton.setText("Yes");
+            softButton.setSoftButtonID(101);
+            softButton.setType(SoftButtonType.SBT_TEXT);
+            //softButton.setSystemAction(SystemAction.STEAL_FOCUS);
+            SoftButton softButton1 = new SoftButton();
+            softButton1.setText("NO");
+            softButton1.setSoftButtonID(102);
+            softButton1.setType(SoftButtonType.SBT_TEXT);
+            Vector v = new Vector();
+            v.add(softButton);
+            v.add(softButton1);
+
+            //req = RPCRequestFactory.buildAlert("Break Time..!!", "Do you want to locate near by restaurants?",10000,autoIncCorrId++);
+            Alert req = RPCRequestFactory.buildAlert("Break Time..!!", "Do you want to locate near by restaurants", "?", 10000, v,autoIncCorrId++);
+            proxy.sendRPCRequest(req);
+            //proxy.alert("Break Time", true,autoIncCorrId++);
+        } catch (SdlException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void PerformInteraction(){
+        try {
+            CreateInteractionChoiceSet createInteractionChoiceSet = new CreateInteractionChoiceSet();
+
+            Vector<Choice> list = new Vector<>();
+            Choice choice = new Choice();
+            choice.setChoiceID(10);
+            choice.setMenuName("YES");
+            list.add(choice);
+            Choice choice1 = new Choice();
+            choice1.setChoiceID(11);
+            choice1.setMenuName("NO");
+            list.add(choice1);
+            // createInteractionChoiceSet.setChoiceSet(list);
+            CreateInteractionChoiceSet req1;
+            req1 = RPCRequestFactory.buildCreateInteractionChoiceSet(list, 400, autoIncCorrId++);
+            proxy.sendRPCRequest(req1);
+
+            //proxy.alert("Break Time", true,autoIncCorrId++);
+        } catch (SdlException e) {
+            e.printStackTrace();
+        }
+    }
+
     /**
      * Sends the app icon through the uploadImage method with correct params
      * @throws SdlException
@@ -257,6 +346,7 @@ public class SdlService extends Service implements IProxyListenerALM{
     private void sendIcon() throws SdlException {
         iconCorrelationId = autoIncCorrId++;
         uploadImage(R.mipmap.ic_launcher, ICON_FILENAME, iconCorrelationId, true);
+        uploadImage(R.mipmap.ic_launcher, "tile_1.png", autoIncCorrId++, true);
     }
 
     /**
@@ -339,6 +429,7 @@ public class SdlService extends Service implements IProxyListenerALM{
             if (notification.getFirstRun()) {
                 // send welcome message if applicable
                 performWelcomeMessage();
+                sendAlert();
 
                 Log.i(TAG, "getvehicledata calling ");
                 try {
@@ -375,6 +466,23 @@ public class SdlService extends Service implements IProxyListenerALM{
         try {
             //Set the welcome message on screen
             proxy.show(APP_NAME, WELCOME_SHOW, TextAlignment.CENTERED, autoIncCorrId++);
+
+            //Say the welcome message
+            proxy.speak(WELCOME_SPEAK, autoIncCorrId++);
+
+        } catch (SdlException e) {
+            e.printStackTrace();
+        }
+
+    }
+
+    /**
+     * Will show a sample welcome message on screen as well as speak a sample welcome message
+     */
+    private void performWelcomeMessage1(){
+        try {
+            //Set the welcome message on screen
+            proxy.show(APP_NAME, "Hello clicked from Alert", TextAlignment.CENTERED, autoIncCorrId++);
 
             //Say the welcome message
             proxy.speak(WELCOME_SPEAK, autoIncCorrId++);
@@ -445,6 +553,9 @@ public class SdlService extends Service implements IProxyListenerALM{
                 case TEST_COMMAND_ID:
                     showTest();
                     break;
+                case TEST_COMMAND_ID_2:
+                    // showTest1();
+                    break;
             }
             //onAddCommandClicked(id);
         }
@@ -510,11 +621,16 @@ public class SdlService extends Service implements IProxyListenerALM{
     @Override
     public void onCreateInteractionChoiceSetResponse(CreateInteractionChoiceSetResponse response) {
         Log.i(TAG, "CreateInteractionChoiceSet response from SDL: " + response.getResultCode().name() + " Info: " + response.getInfo());
+
     }
 
     @Override
     public void onAlertResponse(AlertResponse response) {
         Log.i(TAG, "Alert response from SDL: " + response.getResultCode().name() + " Info: " + response.getInfo());
+        Log.i(TAG, "Alert response from SDL 1: " + response.getFunctionName());
+        Log.i(TAG, "Alert response from SDL 2: " + response.getMessageType());
+        Log.i(TAG, "Alert response from SDL 2: " + response.getParameters("Alert"));
+        Log.i(TAG, "Alert response from SDL 2: " + response.getSuccess());
     }
 
     @Override
@@ -571,6 +687,21 @@ public class SdlService extends Service implements IProxyListenerALM{
     @Override
     public void onOnButtonPress(OnButtonPress notification) {
         Log.i(TAG, "OnButtonPress notification from SDL: " + notification);
+        Log.i(TAG, "OnButtonPress notification from SDL1: " + notification.getCustomButtonName().toString());
+        if(notification.getCustomButtonName() != null) {
+            if("101".equalsIgnoreCase(notification.getCustomButtonName().toString())){
+                SetDisplayLayout layout = new SetDisplayLayout();
+                layout.setDisplayLayout("TILES_ONLY");
+                layout.setCorrelationID(autoIncCorrId++);
+
+                try{
+                    //RPCRequestFactory.build
+                    proxy.sendRPCRequest(layout);
+                } catch (Exception e) {
+
+                }
+            }
+        }
     }
 
     @Override
@@ -690,6 +821,41 @@ public class SdlService extends Service implements IProxyListenerALM{
     @Override
     public void onSetDisplayLayoutResponse(SetDisplayLayoutResponse response) {
         Log.i(TAG, "SetDisplayLayout response from SDL: " + response.getResultCode().name() + " Info: " + response.getInfo());
+
+        //Hashtable hashtable = new Hashtable();
+        // hashtable.put("Name","Star");
+
+        List list = new ArrayList();
+
+        SoftButton softButton = new SoftButton();
+        softButton.setText("Star");
+        softButton.setSoftButtonID(104);
+        softButton.setType(SoftButtonType.SBT_TEXT);
+
+        Image image = new Image();
+        image.setValue("tile_1");
+        image.setImageType(ImageType.STATIC);
+        // image.set
+
+        softButton.setImage(image);
+        //softButton.setSystemAction(SystemAction.STEAL_FOCUS);
+        SoftButton softButton1 = new SoftButton();
+        softButton1.setText("Taco");
+        softButton1.setSoftButtonID(105);
+        softButton1.setType(SoftButtonType.SBT_TEXT);
+        Vector v = new Vector();
+        v.add(softButton);
+        v.add(softButton1);
+
+
+        Show show = new Show();
+        show.setSoftButtons(v);
+        show.setCorrelationID(autoIncCorrId++);
+        try {
+            proxy.sendRPCRequest(show);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
     }
 
