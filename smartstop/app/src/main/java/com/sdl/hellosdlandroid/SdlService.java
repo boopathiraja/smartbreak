@@ -105,9 +105,9 @@ public class SdlService extends Service implements IProxyListenerALM{
     private static final String TAG 					= "Smart Break";
 
     private static final String APP_NAME 				= "Smart Break";
-    private static final String APP_ID 					= "22056";
+    private static final String APP_ID 					= "896613555";
 
-    private static final String ICON_FILENAME 			= "ic_launcher.png";
+    private static final String ICON_FILENAME 			= "ic_launcher1.png";
     private int iconCorrelationId;
 
     List<String> remoteFiles;
@@ -352,7 +352,7 @@ public class SdlService extends Service implements IProxyListenerALM{
     private void sendIcon() throws SdlException {
         Log.i(TAG, "send Icon: ");
         iconCorrelationId = autoIncCorrId++;
-        // deleteImage(R.mipmap.ic_launcher, ICON_FILENAME, iconCorrelationId, false);
+        // deleteImage(R.mipmap.ic_launcher1, ICON_FILENAME, iconCorrelationId, false);
         uploadImage(R.mipmap.ic_launcher, ICON_FILENAME, iconCorrelationId, true);
 
     }
@@ -447,10 +447,11 @@ public class SdlService extends Service implements IProxyListenerALM{
         if(notification.getHmiLevel().equals(HMILevel.HMI_FULL)){
             if (notification.getFirstRun()) {
                 // send welcome message if applicable
-               // uploadImage(R.drawable.starbucks_logo, "starbucks_logo.png", autoIncCorrId++, true);
-                //uploadImage(R.drawable.chipotle_logo, "chipotle_logo.png", autoIncCorrId++, true);
-                //uploadImage(R.drawable.mcdonalds, "mcdonalds.png", autoIncCorrId++, true);
-                //uploadImage(R.drawable.safe_place, "safe_place.png", autoIncCorrId++, true);
+                uploadImage(R.drawable.starbucks_logo, "starbucks_logo.png", autoIncCorrId++, true);
+                uploadImage(R.drawable.chipotle_logo, "chipotle_logo.png", autoIncCorrId++, true);
+                uploadImage(R.drawable.mcdonalds, "mcdonalds.png", autoIncCorrId++, true);
+                uploadImage(R.drawable.safe_place, "safe_place.png", autoIncCorrId++, true);
+                uploadImage(R.drawable.smartbreakslarge, "smartbreakslarge.png", autoIncCorrId++, true);
 
                 performWelcomeMessage();
                 sendAlert();
@@ -488,9 +489,9 @@ public class SdlService extends Service implements IProxyListenerALM{
     private void performWelcomeMessage(){
         try {
             //Set the welcome message on screen
-           // proxy.show(APP_NAME, WELCOME_SHOW, TextAlignment.CENTERED, autoIncCorrId++);
+            // proxy.show(APP_NAME, WELCOME_SHOW, TextAlignment.CENTERED, autoIncCorrId++);
             SetDisplayLayout layout = new SetDisplayLayout();
-            layout.setDisplayLayout("LARGE_GRAPHIC_ONLY");
+            layout.setDisplayLayout("TEXT_WITH_GRAPHIC");
             homeCorelId = autoIncCorrId++;
             layout.setCorrelationID(homeCorelId);
 
@@ -856,17 +857,22 @@ public class SdlService extends Service implements IProxyListenerALM{
 
     @Override
     public void onSetDisplayLayoutResponse(SetDisplayLayoutResponse response) {
-
+        Log.i(TAG, "correlaation id: "+ response.getCorrelationID() +"--"+homeCorelId);
 
         if(response.getCorrelationID() == homeCorelId){ //If we have successfully uploaded our icon, we want to set it
             try {
-    Show show = new Show();
-    Image image3 = new Image();
-    image3.setValue("safe_place.png");
-    image3.setImageType(ImageType.DYNAMIC);
-    show.setGraphic(image3);
+                Show show = new Show();
+                Image image3 = new Image();
+                image3.setValue("smartbreakslarge.png");
+                image3.setImageType(ImageType.DYNAMIC);
+                show.setMainField1("Your next alert is approx after");
+                //show.setStatusBar("Your next alert is approx after 30 mins.");
+                show.setMainField2("30 mins ");
+                show.setMainField3("Smart prediction in progress!!!");
+                //show.setMainField4("hij");
+                show.setGraphic(image3);
                 show.setCorrelationID(autoIncCorrId++);
-    proxy.sendRPCRequest(show);
+                proxy.sendRPCRequest(show);
             } catch (SdlException e) {
                 e.printStackTrace();
             }
