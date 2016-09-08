@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <string name="app_name">Smart Break</string>
-    <string name="hello_world">Smart Break!</string>
+    <string name="app_name">Smart Breaks</string>
+    <string name="hello_world">Smart Breaks!</string>
     <string name="action_settings">Settings</string>
 
 </resources>
