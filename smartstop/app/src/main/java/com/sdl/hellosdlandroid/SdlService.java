@@ -26,6 +26,7 @@ import com.smartdevicelink.proxy.rpc.Choice;
 import com.smartdevicelink.proxy.rpc.CreateInteractionChoiceSet;
 import com.smartdevicelink.proxy.rpc.CreateInteractionChoiceSetResponse;
 import com.smartdevicelink.proxy.rpc.DeleteCommandResponse;
+import com.smartdevicelink.proxy.rpc.DeleteFile;
 import com.smartdevicelink.proxy.rpc.DeleteFileResponse;
 import com.smartdevicelink.proxy.rpc.DeleteInteractionChoiceSetResponse;
 import com.smartdevicelink.proxy.rpc.DeleteSubMenuResponse;
@@ -74,6 +75,7 @@ import com.smartdevicelink.proxy.rpc.ShowConstantTbtResponse;
 import com.smartdevicelink.proxy.rpc.ShowResponse;
 import com.smartdevicelink.proxy.rpc.SliderResponse;
 import com.smartdevicelink.proxy.rpc.SoftButton;
+import com.smartdevicelink.proxy.rpc.Speak;
 import com.smartdevicelink.proxy.rpc.SpeakResponse;
 import com.smartdevicelink.proxy.rpc.StreamRPCResponse;
 import com.smartdevicelink.proxy.rpc.SubscribeButtonResponse;
@@ -133,7 +135,7 @@ public class SdlService extends Service implements IProxyListenerALM{
 
     private boolean firstNonHmiNone = true;
     private boolean isVehicleDataSubscribed = false;
-
+    private int homeCorelId;
     Alert req;
 
     RPCRequest rpcMessage;
@@ -306,9 +308,13 @@ public class SdlService extends Service implements IProxyListenerALM{
             v.add(softButton);
             v.add(softButton1);
 
+            Speak req1 = RPCRequestFactory.buildSpeak("Break Time..!! Do you want to locate near by restaurants", autoIncCorrId++);
+            proxy.sendRPCRequest(req1);
+
             //req = RPCRequestFactory.buildAlert("Break Time..!!", "Do you want to locate near by restaurants?",10000,autoIncCorrId++);
             Alert req = RPCRequestFactory.buildAlert("Break Time..!!", "Do you want to locate near by restaurants", "?", 10000, v,autoIncCorrId++);
             proxy.sendRPCRequest(req);
+
             //proxy.alert("Break Time", true,autoIncCorrId++);
         } catch (SdlException e) {
             e.printStackTrace();
@@ -344,9 +350,22 @@ public class SdlService extends Service implements IProxyListenerALM{
      * @throws SdlException
      */
     private void sendIcon() throws SdlException {
+        Log.i(TAG, "send Icon: ");
         iconCorrelationId = autoIncCorrId++;
+        // deleteImage(R.mipmap.ic_launcher, ICON_FILENAME, iconCorrelationId, false);
         uploadImage(R.mipmap.ic_launcher, ICON_FILENAME, iconCorrelationId, true);
-        uploadImage(R.mipmap.ic_launcher, "tile_1.png", autoIncCorrId++, true);
+
+    }
+
+    private void deleteImage(int resource, String imageName,int correlationId, boolean isPersistent){
+        DeleteFile deleteFile=new DeleteFile();
+        deleteFile.setSdlFileName(imageName);
+        deleteFile.setCorrelationID(autoIncCorrId++);
+        try {
+            proxy.sendRPCRequest(deleteFile);
+        } catch (SdlException e) {
+            e.printStackTrace();
+        }
     }
 
     /**
@@ -360,7 +379,7 @@ public class SdlService extends Service implements IProxyListenerALM{
         PutFile putFile = new PutFile();
         putFile.setFileType(FileType.GRAPHIC_PNG);
         putFile.setSdlFileName(imageName);
-        putFile.setCorrelationID(correlationId);
+        putFile.setCorrelationID(correlationId++);
         putFile.setPersistentFile(isPersistent);
         putFile.setSystemFile(false);
         putFile.setBulkData(contentsOfResource(resource));
@@ -428,9 +447,13 @@ public class SdlService extends Service implements IProxyListenerALM{
         if(notification.getHmiLevel().equals(HMILevel.HMI_FULL)){
             if (notification.getFirstRun()) {
                 // send welcome message if applicable
+               // uploadImage(R.drawable.starbucks_logo, "starbucks_logo.png", autoIncCorrId++, true);
+                //uploadImage(R.drawable.chipotle_logo, "chipotle_logo.png", autoIncCorrId++, true);
+                //uploadImage(R.drawable.mcdonalds, "mcdonalds.png", autoIncCorrId++, true);
+                //uploadImage(R.drawable.safe_place, "safe_place.png", autoIncCorrId++, true);
+
                 performWelcomeMessage();
                 sendAlert();
-
                 Log.i(TAG, "getvehicledata calling ");
                 try {
                     proxy.getvehicledata(true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,autoIncCorrId++);
@@ -465,7 +488,19 @@ public class SdlService extends Service implements IProxyListenerALM{
     private void performWelcomeMessage(){
         try {
             //Set the welcome message on screen
-            proxy.show(APP_NAME, WELCOME_SHOW, TextAlignment.CENTERED, autoIncCorrId++);
+           // proxy.show(APP_NAME, WELCOME_SHOW, TextAlignment.CENTERED, autoIncCorrId++);
+            SetDisplayLayout layout = new SetDisplayLayout();
+            layout.setDisplayLayout("LARGE_GRAPHIC_ONLY");
+            homeCorelId = autoIncCorrId++;
+            layout.setCorrelationID(homeCorelId);
+
+            try {
+                proxy.sendRPCRequest(layout);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+
 
             //Say the welcome message
             proxy.speak(WELCOME_SPEAK, autoIncCorrId++);
@@ -511,7 +546,7 @@ public class SdlService extends Service implements IProxyListenerALM{
 
         // Check the mutable set for the AppIcon
         // If not present, upload the image
-        if(remoteFiles== null || !remoteFiles.contains(SdlService.ICON_FILENAME)){
+        if(true || remoteFiles== null || !remoteFiles.contains(SdlService.ICON_FILENAME)){
             try {
                 sendIcon();
             } catch (SdlException e) {
@@ -529,7 +564,8 @@ public class SdlService extends Service implements IProxyListenerALM{
 
     @Override
     public void onPutFileResponse(PutFileResponse response) {
-        Log.i(TAG, "onPutFileResponse from SDL");
+        Log.i(TAG, "onPutFileResponse from SDL :" +response.getCorrelationID());
+        Log.i(TAG, "response.getCorrelationID(): "+response.getCorrelationID() + "-"+iconCorrelationId);
         if(response.getCorrelationID() == iconCorrelationId){ //If we have successfully uploaded our icon, we want to set it
             try {
                 proxy.setappicon(ICON_FILENAME, autoIncCorrId++);
@@ -691,7 +727,7 @@ public class SdlService extends Service implements IProxyListenerALM{
         if(notification.getCustomButtonName() != null) {
             if("101".equalsIgnoreCase(notification.getCustomButtonName().toString())){
                 SetDisplayLayout layout = new SetDisplayLayout();
-                layout.setDisplayLayout("TILES_ONLY");
+                layout.setDisplayLayout("TILES_WITH_GRAPHIC");
                 layout.setCorrelationID(autoIncCorrId++);
 
                 try{
@@ -820,43 +856,84 @@ public class SdlService extends Service implements IProxyListenerALM{
 
     @Override
     public void onSetDisplayLayoutResponse(SetDisplayLayoutResponse response) {
-        Log.i(TAG, "SetDisplayLayout response from SDL: " + response.getResultCode().name() + " Info: " + response.getInfo());
-
-        //Hashtable hashtable = new Hashtable();
-        // hashtable.put("Name","Star");
-
-        List list = new ArrayList();
-
-        SoftButton softButton = new SoftButton();
-        softButton.setText("Star");
-        softButton.setSoftButtonID(104);
-        softButton.setType(SoftButtonType.SBT_TEXT);
-
-        Image image = new Image();
-        image.setValue("tile_1");
-        image.setImageType(ImageType.STATIC);
-        // image.set
-
-        softButton.setImage(image);
-        //softButton.setSystemAction(SystemAction.STEAL_FOCUS);
-        SoftButton softButton1 = new SoftButton();
-        softButton1.setText("Taco");
-        softButton1.setSoftButtonID(105);
-        softButton1.setType(SoftButtonType.SBT_TEXT);
-        Vector v = new Vector();
-        v.add(softButton);
-        v.add(softButton1);
 
 
-        Show show = new Show();
-        show.setSoftButtons(v);
-        show.setCorrelationID(autoIncCorrId++);
-        try {
-            proxy.sendRPCRequest(show);
-        } catch (Exception e) {
-            e.printStackTrace();
+        if(response.getCorrelationID() == homeCorelId){ //If we have successfully uploaded our icon, we want to set it
+            try {
+    Show show = new Show();
+    Image image3 = new Image();
+    image3.setValue("safe_place.png");
+    image3.setImageType(ImageType.DYNAMIC);
+    show.setGraphic(image3);
+                show.setCorrelationID(autoIncCorrId++);
+    proxy.sendRPCRequest(show);
+            } catch (SdlException e) {
+                e.printStackTrace();
+            }
+        }else {
+
+
+            Log.i(TAG, "SetDisplayLayout response from SDL: " + response.getResultCode().name() + " Info: " + response.getInfo());
+
+            //Hashtable hashtable = new Hashtable();
+            // hashtable.put("Name","Star");
+
+            List list = new ArrayList();
+
+            SoftButton softButton = new SoftButton();
+            softButton.setText("4 Stars");
+            softButton.setSoftButtonID(104);
+            softButton.setType(SoftButtonType.SBT_BOTH);
+
+            Image image = new Image();
+            image.setValue("starbucks_logo.png");
+            image.setImageType(ImageType.DYNAMIC);
+            // image.set
+
+            softButton.setImage(image);
+
+            //softButton.setSystemAction(SystemAction.STEAL_FOCUS);
+            SoftButton softButton1 = new SoftButton();
+            softButton1.setText("4.5 Stars");
+            softButton1.setSoftButtonID(105);
+            softButton1.setType(SoftButtonType.SBT_BOTH);
+
+            Image image1 = new Image();
+            image1.setValue("chipotle_logo.png");
+            image1.setImageType(ImageType.DYNAMIC);
+            softButton1.setImage(image1);
+
+            SoftButton softButton2 = new SoftButton();
+            softButton2.setText("3.5 Stars");
+            softButton2.setSoftButtonID(106);
+            softButton2.setType(SoftButtonType.SBT_BOTH);
+
+            Image image2 = new Image();
+            image2.setValue("mcdonalds.png");
+            image2.setImageType(ImageType.DYNAMIC);
+            softButton2.setImage(image2);
+
+            Vector v = new Vector();
+            v.add(softButton);
+            v.add(softButton1);
+            v.add(softButton2);
+
+
+            Show show = new Show();
+            show.setSoftButtons(v);
+            show.setCorrelationID(autoIncCorrId++);
+
+            Image image3 = new Image();
+            image3.setValue("safe_place.png");
+            image3.setImageType(ImageType.DYNAMIC);
+
+            show.setGraphic(image3);
+            try {
+                proxy.sendRPCRequest(show);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
-
     }
 
     @Override
