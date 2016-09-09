@@ -132,7 +132,10 @@ public class SdlService extends Service implements IProxyListenerALM{
     private static final String TEST_COMMAND_NAME 		= "Home";
     private static final int TEST_COMMAND_ID 			= 1;
 
-
+    private static final String WELCOME_SPEAK1 = "Smart prediction in progress";
+    private static final String WELCOME_SPEAK2 = "Your next alert is approx after";
+    //show.setStatusBar("Your next alert is approx after 30 mins.");
+    private static String WELCOME_SPEAK3 = new Random().nextInt(90)+" mins ";
 
     // Conenction management
     private static final int CONNECTION_TIMEOUT = 180 * 1000;
@@ -555,7 +558,8 @@ public class SdlService extends Service implements IProxyListenerALM{
 
             //Say the welcome message
             welcomeCorId = autoIncCorrId++;
-            proxy.speak(WELCOME_SPEAK, welcomeCorId);
+            WELCOME_SPEAK3 = new Random().nextInt(90)+" mins ";
+            proxy.speak(WELCOME_SPEAK1+WELCOME_SPEAK2+WELCOME_SPEAK3, welcomeCorId);
 
 
 
@@ -1026,11 +1030,11 @@ public class SdlService extends Service implements IProxyListenerALM{
                 Image image3 = new Image();
                 image3.setValue("smartbreakslarge.png");
                 image3.setImageType(ImageType.DYNAMIC);
-                show.setMainField1("Your next alert is approx after");
-                //show.setStatusBar("Your next alert is approx after 30 mins.");
-                show.setMainField2("30 mins ");
-                show.setMainField3("Smart prediction in progress!!!");
-                //show.setMainField4("hij");
+                show.setMainField1(WELCOME_SPEAK1);
+                show.setMainField2(WELCOME_SPEAK2);
+                show.setMainField3(WELCOME_SPEAK3);
+
+
                 show.setGraphic(image3);
                 show.setCorrelationID(autoIncCorrId++);
                 proxy.sendRPCRequest(show);
