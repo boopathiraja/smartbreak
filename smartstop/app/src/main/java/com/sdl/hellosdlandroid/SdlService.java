@@ -75,7 +75,6 @@ import com.smartdevicelink.proxy.rpc.ShowConstantTbtResponse;
 import com.smartdevicelink.proxy.rpc.ShowResponse;
 import com.smartdevicelink.proxy.rpc.SliderResponse;
 import com.smartdevicelink.proxy.rpc.SoftButton;
-import com.smartdevicelink.proxy.rpc.Speak;
 import com.smartdevicelink.proxy.rpc.SpeakResponse;
 import com.smartdevicelink.proxy.rpc.StreamRPCResponse;
 import com.smartdevicelink.proxy.rpc.SubscribeButtonResponse;
@@ -151,6 +150,7 @@ public class SdlService extends Service implements IProxyListenerALM{
     private boolean firstNonHmiNone = true;
     private boolean isVehicleDataSubscribed = false;
     private int homeCorelId;
+    private int welcomeCorId;
     Alert req;
 
     RPCRequest rpcMessage;
@@ -300,15 +300,7 @@ public class SdlService extends Service implements IProxyListenerALM{
     }
 
 
-    public void showTest1(){
-        // try {
-        sendAlert();
-        // proxy.show(TEST_COMMAND_NAME, "Command has been selected", TextAlignment.CENTERED, autoIncCorrId++);
-        // proxy.speak(TEST_COMMAND_NAME, autoIncCorrId++);
-        //  } catch (SdlException e) {
-        //    e.printStackTrace();
-        // }
-    }
+
 
     /**
      *  Add commands for the app on SDL.
@@ -363,8 +355,8 @@ public class SdlService extends Service implements IProxyListenerALM{
             v.add(softButton);
             v.add(softButton1);
 
-            Speak req1 = RPCRequestFactory.buildSpeak("Break Time..!! Do you want to locate near by restaurants", autoIncCorrId++);
-            proxy.sendRPCRequest(req1);
+           //Speak req1 = RPCRequestFactory.buildSpeak("Break Time Do you want to locate near by restaurants", autoIncCorrId++);
+           // proxy.sendRPCRequest(req1);
 
             //req = RPCRequestFactory.buildAlert("Break Time..!!", "Do you want to locate near by restaurants?",10000,autoIncCorrId++);
             Alert req = RPCRequestFactory.buildAlert("Break Time..!!", "Do you want to locate near by restaurants", "?", 10000, v,autoIncCorrId++);
@@ -499,23 +491,31 @@ public class SdlService extends Service implements IProxyListenerALM{
 
     @Override
     public void onOnHMIStatus(OnHMIStatus notification) {
+        Log.i(TAG, "onOnHMIStatus calling "+notification.getHmiLevel());
         if(notification.getHmiLevel().equals(HMILevel.HMI_FULL)){
             if (notification.getFirstRun()) {
                 // send welcome message if applicable
-                uploadImage(R.drawable.starbucks_logo, "starbucks_logo.png", autoIncCorrId++, true);
-                uploadImage(R.drawable.chipotle_logo, "chipotle_logo.png", autoIncCorrId++, true);
-                uploadImage(R.drawable.mcdonalds, "mcdonalds.png", autoIncCorrId++, true);
-                uploadImage(R.drawable.safe_place, "safe_place.png", autoIncCorrId++, true);
-                uploadImage(R.drawable.smartbreakslarge, "smartbreakslarge.png", autoIncCorrId++, true);
+                //uploadImage(R.drawable.starbucks_logo, "starbucks_logo.png", autoIncCorrId++, true);
+                //uploadImage(R.drawable.chipotle_logo, "chipotle_logo.png", autoIncCorrId++, true);
+                //uploadImage(R.drawable.mcdonalds, "mcdonalds.png", autoIncCorrId++, true);
+                //uploadImage(R.drawable.safe_place, "safe_place.png", autoIncCorrId++, true);
+                //uploadImage(R.drawable.smartbreakslarge, "smartbreakslarge.png", autoIncCorrId++, true);
+                uploadImage(R.drawable.redcaution, "redcaution.png", autoIncCorrId++, true);
+                uploadImage(R.drawable.dunkin_donuts, "dunkin_donuts.png", autoIncCorrId++, true);
+
+
 
                 performWelcomeMessage();
-                sendAlert();
-                Log.i(TAG, "getvehicledata calling ");
+
+
+
+               // sendAlert();
+                /*Log.i(TAG, "getvehicledata calling ");
                 try {
                     proxy.getvehicledata(true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,autoIncCorrId++);
                 } catch (SdlException e) {
                     e.printStackTrace();
-                }
+                }*/
             }
             // Other HMI (Show, PerformInteraction, etc.) would go here
         }
@@ -523,7 +523,7 @@ public class SdlService extends Service implements IProxyListenerALM{
 
         if(!notification.getHmiLevel().equals(HMILevel.HMI_NONE)
                 && firstNonHmiNone){
-            sendCommands();
+            //sendCommands();
             //uploadImages();
             firstNonHmiNone = false;
 
@@ -559,11 +559,14 @@ public class SdlService extends Service implements IProxyListenerALM{
 
 
             //Say the welcome message
-            proxy.speak(WELCOME_SPEAK, autoIncCorrId++);
+            welcomeCorId = autoIncCorrId++;
+            proxy.speak(WELCOME_SPEAK, welcomeCorId);
+
+
 
         } catch (SdlException e) {
-            e.printStackTrace();
-        }
+           e.printStackTrace();
+       }
 
     }
 
@@ -764,11 +767,17 @@ public class SdlService extends Service implements IProxyListenerALM{
     @Override
     public void onShowResponse(ShowResponse response) {
         Log.i(TAG, "Show response from SDL: " + response.getResultCode().name() + " Info: " + response.getInfo());
+      //  sendAlert();
     }
 
     @Override
     public void onSpeakResponse(SpeakResponse response) {
         Log.i(TAG, "SpeakCommand response from SDL: " + response.getResultCode().name() + " Info: " + response.getInfo());
+
+            //if(response.getCorrelationID() == welcomeCorId) { //If we have successfully uploaded our icon, we want to set it
+
+                sendAlert();
+            //}
     }
 
     @Override
@@ -789,7 +798,7 @@ public class SdlService extends Service implements IProxyListenerALM{
         sendLocation.setLatitudeDegrees(lat);
         sendLocation.setLongitudeDegrees(lang);
         sendLocation.setLocationDescription("coffee shop");
-        sendLocation.setLocationName("starbucks tatum");
+        sendLocation.setLocationName("Dunkin Donuts tatum");
         sendLocation.setCorrelationID(autoIncCorrId++);
 
         try {
@@ -806,11 +815,6 @@ public class SdlService extends Service implements IProxyListenerALM{
         Log.i(TAG, "OnButtonPress notification from SDL: " + notification);
         Log.i(TAG, "OnButtonPress notification from SDL1: " + notification.getCustomButtonName().toString());
 
-        List<BreaksLoc> locList =  getLocation();
-
-
-        sendNavigation(Double.valueOf(locList.get(0).getLatitude()),Double.valueOf(locList.get(0).getLongitude()));
-
 
 
 
@@ -821,23 +825,28 @@ public class SdlService extends Service implements IProxyListenerALM{
                 layout.setCorrelationID(autoIncCorrId++);
 
                 try{
-                    //RPCRequestFactory.build
+                     //RPCRequestFactory.build
                     proxy.sendRPCRequest(layout);
                 } catch (Exception e) {
 
                 }
-            }else if("102".equalsIgnoreCase(notification.getCustomButtonName().toString())){
+            }else if("104".equalsIgnoreCase(notification.getCustomButtonName().toString())){
                 SetDisplayLayout layout = new SetDisplayLayout();
                 layout.setDisplayLayout("TILES_WITH_GRAPHIC");
                 layout.setCorrelationID(autoIncCorrId++);
 
                 try{
+                    //List<BreaksLoc> locList =  getLocation();
+                    //sendNavigation(Double.valueOf(locList.get(0).getLatitude()),Double.valueOf(locList.get(0).getLongitude()));
+                    sendNavigation(maricopa_country_lat, maricopa_county_lon);
+
+
                     //RPCRequestFactory.build
-                    proxy.sendRPCRequest(layout);
+                    //proxy.sendRPCRequest(layout);
                 } catch (Exception e) {
 
                 }
-            }else if("103".equalsIgnoreCase(notification.getCustomButtonName().toString())){
+            }else if("106".equalsIgnoreCase(notification.getCustomButtonName().toString())){
                 SetDisplayLayout layout = new SetDisplayLayout();
                 layout.setDisplayLayout("TILES_WITH_GRAPHIC");
                 layout.setCorrelationID(autoIncCorrId++);
@@ -1005,12 +1014,12 @@ public class SdlService extends Service implements IProxyListenerALM{
             List list = new ArrayList();
 
             SoftButton softButton = new SoftButton();
-            softButton.setText("4 Stars");
+            softButton.setText("4.5 Stars");
             softButton.setSoftButtonID(104);
             softButton.setType(SoftButtonType.SBT_BOTH);
 
             Image image = new Image();
-            image.setValue("starbucks_logo.png");
+            image.setValue("dunkin_donuts.png");
             image.setImageType(ImageType.DYNAMIC);
             // image.set
 
@@ -1048,7 +1057,9 @@ public class SdlService extends Service implements IProxyListenerALM{
             show.setCorrelationID(autoIncCorrId++);
 
             Image image3 = new Image();
-            image3.setValue("safe_place.png");
+            //image3.setValue("safe_place.png");
+            image3.setValue("redcaution.png");
+
             image3.setImageType(ImageType.DYNAMIC);
 
             show.setGraphic(image3);
@@ -1210,6 +1221,7 @@ public class SdlService extends Service implements IProxyListenerALM{
             e.printStackTrace();
         }
 
+        Log.i(TAG,"my Data \t"+data.toString());
         return  data;
     }
 
