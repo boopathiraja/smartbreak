@@ -129,11 +129,10 @@ public class SdlService extends Service implements IProxyListenerALM{
     private static final String WELCOME_SHOW 			= "Welcome to Smart Breaks";
     private static final String WELCOME_SPEAK 			= "Welcome to Hello Smart Breaks";
 
-    private static final String TEST_COMMAND_NAME 		= "Show Route";
+    private static final String TEST_COMMAND_NAME 		= "Home";
     private static final int TEST_COMMAND_ID 			= 1;
 
-    private static final String TEST_COMMAND_NAME_2 		= "Test Command 2";
-    private static final int TEST_COMMAND_ID_2			= 2;
+
 
     // Conenction management
     private static final int CONNECTION_TIMEOUT = 180 * 1000;
@@ -316,12 +315,7 @@ public class SdlService extends Service implements IProxyListenerALM{
         command.setVrCommands(Arrays.asList(new String[]{TEST_COMMAND_NAME}));
         sendRpcRequest(command);
 
-        command = new AddCommand();
-        params.setMenuName(TEST_COMMAND_NAME_2);
-        command.setCmdID(TEST_COMMAND_ID_2);
-        command.setMenuParams(params);
-        command.setVrCommands(Arrays.asList(new String[]{TEST_COMMAND_NAME_2}));
-        sendRpcRequest(command);
+
     }
 
     /**
@@ -524,7 +518,7 @@ public class SdlService extends Service implements IProxyListenerALM{
 
         if(!notification.getHmiLevel().equals(HMILevel.HMI_NONE)
                 && firstNonHmiNone){
-            //sendCommands();
+            sendCommands();
             //uploadImages();
             firstNonHmiNone = false;
 
@@ -647,11 +641,9 @@ public class SdlService extends Service implements IProxyListenerALM{
         if(id != null){
             switch(id){
                 case TEST_COMMAND_ID:
-                    showTest();
+                   performWelcomeMessage();
                     break;
-                case TEST_COMMAND_ID_2:
-                    // showTest1();
-                    break;
+
             }
             //onAddCommandClicked(id);
         }
